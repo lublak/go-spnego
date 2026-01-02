@@ -1,4 +1,4 @@
-package pure
+package internal
 
 import (
 	"unsafe"
@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func getDomain() (string, error) {
+func GetDomain() (string, error) {
 	var domain *uint16
 	var status uint32
 	err := windows.NetGetJoinInformation(nil, &domain, &status)

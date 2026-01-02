@@ -21,7 +21,7 @@ func (t *ntlmRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 		return nil, errors.New("anonymous authentication not supported")
 	}
 	workstation, _ := os.Hostname()
-	domain, _ := getDomain()
+	domain, _ := internal.GetDomain()
 	negotiate, err := ntlmssp.NewNegotiateMessage(domain, workstation)
 	if err != nil {
 		return nil, err

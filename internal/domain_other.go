@@ -1,8 +1,8 @@
 //go:build !windows
 // +build !windows
 
-package pure
+package internal
 
-func getDomain() (string, error) {
+func GetDomain() (string, error) {
 	return "", nil
 }
