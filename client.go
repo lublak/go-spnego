@@ -7,7 +7,7 @@ import (
 	"github.com/lublak/go-spnego/option"
 )
 
-func NewClient(base *http.Client, api option.ApiType, options option.AuthOptions, allowBasicAuth bool) *http.Client {
+func NewClient(base *http.Client, api option.ApiType, options option.AuthOptions) *http.Client {
 	if base == nil {
 		base = &http.Client{}
 	}
@@ -15,7 +15,7 @@ func NewClient(base *http.Client, api option.ApiType, options option.AuthOptions
 		base.Jar, _ = cookiejar.New(nil)
 	}
 
-	base.Transport = NewRoundTripper(base.Transport, api, options, allowBasicAuth)
+	base.Transport = NewRoundTripper(base.Transport, api, options)
 
 	return base
 }

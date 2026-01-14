@@ -4,7 +4,6 @@
 package sspi
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/alexbrainman/sspi"
@@ -60,23 +59,22 @@ func (t *ntlmRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	}
 
 	ntlmToken, err := internal.FindAndDecodeNtlmToken(res.Header.Values("Www-Authenticate"))
-	internal.DiscardResponseBody(res)
 
 	if err != nil {
+		internal.DiscardResponseBody(res)
 		return nil, err
 	}
 
 	authenticate, err := client.Update(ntlmToken)
 
 	if err != nil {
+		internal.DiscardResponseBody(res)
 		return nil, err
 	}
 
 	req.Header.Set("Authorization", internal.EncodeNtlmToken(authenticate))
 
-	if reqBody != nil {
-		reqBody.Seek(pos, io.SeekStart)
-	}
+	internal.ResetRoundTrip(reqBody, pos, res)
 
 	return t.r.RoundTrip(req)
 }

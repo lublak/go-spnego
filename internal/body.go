@@ -37,3 +37,10 @@ func DiscardResponseBody(res *http.Response) {
 	_, _ = io.Copy(io.Discard, res.Body)
 	_ = res.Body.Close()
 }
+
+func ResetRoundTrip(reqBody io.ReadSeekCloser, pos int64, res *http.Response) {
+	if reqBody != nil {
+		reqBody.Seek(pos, io.SeekStart)
+	}
+	DiscardResponseBody(res)
+}

@@ -3,54 +3,64 @@ package pure
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"os/user"
-	"strings"
 
 	"github.com/jcmturner/gokrb5/v8/client"
+	"github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/spnego"
 	"github.com/lublak/go-spnego/internal"
+	"github.com/lublak/go-spnego/option"
 )
 
 type negotiateRoundTripper struct {
-	r http.RoundTripper
+	r       http.RoundTripper
+	ntlm    http.RoundTripper
+	options option.AuthOptions
 }
 
 func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	config, err := kerberosConfig()
+	var config *config.Config
+	var err error
+
+	if t.options.Kerberos != nil && len(t.options.Kerberos.FilePath) > 0 {
+		config, err = kerberosConfigFromPath(t.options.Kerberos.FilePath)
+	} else {
+		config, err = defaultKerberosConfig()
+
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	var ccpath string
+	var c *client.Client
 
-	ccname := os.Getenv("KRB5CCNAME")
-	if strings.HasPrefix(ccname, "FILE:") {
-		ccpath = ccname[len("FILE:"):]
-	} else {
-		u, err := user.Current()
+	if t.options.User == nil || !t.options.UserOnlyForFallback {
+		var ccache *credentials.CCache
+
+		if t.options.Kerberos != nil && len(t.options.Kerberos.CCName) > 0 {
+			ccache, err = kerberosCCacheFromName(t.options.Kerberos.FilePath)
+		} else {
+			ccache, err = defaultKerberosCCache()
+
+		}
+
 		if err != nil {
 			return nil, err
 		}
 
-		ccpath = "/tmp/krb5cc_" + u.Uid
-	}
+		c, err = client.NewFromCCache(ccache, config, client.DisablePAFXFAST(true))
 
-	ccache, err := credentials.LoadCCache(ccpath)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := client.NewFromCCache(ccache, config, client.DisablePAFXFAST(true))
-
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		c = client.NewWithPassword(t.options.User.Name, t.options.User.Domain, t.options.User.Password, config, client.DisablePAFXFAST(true))
 	}
 
 	spn := internal.GetSpnFromRequest(req)
 
-	s := spnego.SPNEGOClient(client, spn)
+	s := spnego.SPNEGOClient(c, spn)
 	err = s.AcquireCred()
 	if err != nil {
 		return nil, fmt.Errorf("could not acquire client credential: %v", err)
@@ -64,12 +74,25 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 		return nil, fmt.Errorf("could not marshal SPNEGO. %v", err)
 	}
 
+	reqBody, pos, err := internal.SetBodyAsSeekCloser(req)
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Set("Authorization", internal.EncodeNegotiateToken(clientToken))
 
 	res, err := t.r.RoundTrip(req)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if res.StatusCode == http.StatusUnauthorized {
+		// fallback to ntlm
+
+		internal.ResetRoundTrip(reqBody, pos, res)
+
+		return t.ntlm.RoundTrip(req)
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -85,11 +108,13 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 	return res, nil
 }
 
-func NewNegotiateRoundTripper(base http.RoundTripper) http.RoundTripper {
+func NewNegotiateRoundTripper(base http.RoundTripper, options option.AuthOptions) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
 	return &negotiateRoundTripper{
-		r: base,
+		r:       base,
+		ntlm:    newGenericNtlmRoundTripper(base, options, true),
+		options: options,
 	}
 }

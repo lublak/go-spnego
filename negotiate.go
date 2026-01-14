@@ -1,8 +1,8 @@
 package spnego
 
 import (
-	"io"
 	"net/http"
+	"runtime"
 
 	"github.com/lublak/go-spnego/internal"
 	"github.com/lublak/go-spnego/option"
@@ -11,11 +11,10 @@ import (
 )
 
 type roundTripper struct {
-	base           http.RoundTripper
-	user           *option.User
-	allowBasicAuth bool
-	negotiate      http.RoundTripper
-	ntlm           http.RoundTripper
+	base      http.RoundTripper
+	negotiate http.RoundTripper
+	ntlm      http.RoundTripper
+	options   option.AuthOptions
 }
 
 func (t *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -33,38 +32,29 @@ func (t *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	wwwAuthenticateHeaders := res.Header.Values("WWW-Authenticate")
 
-	if t.allowBasicAuth && internal.HasBasic(wwwAuthenticateHeaders) {
-		if t.user == nil {
+	if t.options.AllowBasicAuth && internal.HasBasic(wwwAuthenticateHeaders) {
+		if t.options.User == nil {
 			return res, nil
 		}
-		if reqBody != nil {
-			reqBody.Seek(pos, io.SeekStart)
-		}
-		internal.DiscardResponseBody(res)
-		req.SetBasicAuth(internal.JoinDomainAndName(t.user.Domain, t.user.Name), t.user.Password)
+		internal.ResetRoundTrip(reqBody, pos, res)
+		req.SetBasicAuth(internal.JoinDomainAndName(t.options.User.Domain, t.options.User.Name), t.options.User.Password)
 		return t.base.RoundTrip(req)
 	}
 
 	if t.negotiate != nil && internal.HasNegotiate(wwwAuthenticateHeaders) {
-		if reqBody != nil {
-			reqBody.Seek(pos, io.SeekStart)
-		}
-		internal.DiscardResponseBody(res)
+		internal.ResetRoundTrip(reqBody, pos, res)
 		return t.negotiate.RoundTrip(req)
 	}
 
 	if t.ntlm != nil && internal.HasNtlm(wwwAuthenticateHeaders) {
-		if reqBody != nil {
-			reqBody.Seek(pos, io.SeekStart)
-		}
-		internal.DiscardResponseBody(res)
+		internal.ResetRoundTrip(reqBody, pos, res)
 		return t.ntlm.RoundTrip(req)
 	}
 
 	return res, err
 }
 
-func NewRoundTripper(base http.RoundTripper, api option.ApiType, options option.AuthOptions, allowBasicAuth bool) http.RoundTripper {
+func NewRoundTripper(base http.RoundTripper, api option.ApiType, options option.AuthOptions) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
@@ -72,20 +62,27 @@ func NewRoundTripper(base http.RoundTripper, api option.ApiType, options option.
 	var ntlm http.RoundTripper
 	switch api {
 	case option.PURE:
-		negotiate = pure.NewNegotiateRoundTripper(base)
+		negotiate = pure.NewNegotiateRoundTripper(base, options)
 		ntlm = pure.NewNtlmRoundTripper(base, options)
 	case option.SSPI:
 		negotiate = sspi.NewNegotiateRoundTripper(base, options)
 		ntlm = sspi.NewNtlmRoundTripper(base, options)
+	case option.AUTO:
+		if runtime.GOOS == "windows" {
+			negotiate = sspi.NewNegotiateRoundTripper(base, options)
+			ntlm = sspi.NewNtlmRoundTripper(base, options)
+		} else {
+			negotiate = pure.NewNegotiateRoundTripper(base, options)
+			ntlm = pure.NewNtlmRoundTripper(base, options)
+		}
 	}
 	if ntlm != nil && negotiate != nil {
 		return nil
 	}
 	return &roundTripper{
-		base:           base,
-		user:           options.User,
-		negotiate:      negotiate,
-		ntlm:           ntlm,
-		allowBasicAuth: allowBasicAuth,
+		base:      base,
+		negotiate: negotiate,
+		ntlm:      ntlm,
+		options:   options,
 	}
 }

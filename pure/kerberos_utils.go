@@ -2,9 +2,13 @@ package pure
 
 import (
 	"os"
+	"os/user"
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/jcmturner/gokrb5/v8/config"
+	"github.com/jcmturner/gokrb5/v8/credentials"
 )
 
 func getDefaultConfigPath() string {
@@ -20,7 +24,7 @@ func getDefaultConfigPath() string {
 	}
 }
 
-func kerberosConfig() (*config.Config, error) {
+func defaultKerberosConfig() (*config.Config, error) {
 	configPath := os.Getenv("KRB5_CONFIG")
 
 	if len(configPath) == 0 {
@@ -33,6 +37,7 @@ func kerberosConfig() (*config.Config, error) {
 		if os.IsNotExist(err) {
 			return kerberosConfigFromPath(getDefaultConfigPath())
 		}
+		return nil, err
 	}
 
 	return config, nil
@@ -48,4 +53,39 @@ func kerberosConfigFromPath(path string) (*config.Config, error) {
 	defer file.Close()
 
 	return config.NewFromReader(file)
+}
+
+func kerberosCCacheFromName(ccname string) (*credentials.CCache, error) {
+	var ccpath string
+
+	if strings.HasPrefix(ccname, "FILE:") {
+		ccpath = ccname[len("FILE:"):]
+	} else if strings.HasPrefix(ccname, "DIR:") {
+		u, err := user.Current()
+		if err != nil {
+			return nil, err
+		}
+
+		dir := ccname[len("DIR:"):]
+
+		err = os.MkdirAll(dir, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+
+		ccpath = filepath.Join(dir, "krb5cc_"+u.Uid)
+	} else {
+		u, err := user.Current()
+		if err != nil {
+			return nil, err
+		}
+
+		ccpath = "/tmp/krb5cc_" + u.Uid
+	}
+
+	return credentials.LoadCCache(ccpath)
+}
+
+func defaultKerberosCCache() (*credentials.CCache, error) {
+	return kerberosCCacheFromName(os.Getenv("KRB5CCNAME"))
 }
