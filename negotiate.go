@@ -76,7 +76,7 @@ func NewRoundTripper(base http.RoundTripper, api option.ApiType, options option.
 			ntlm = pure.NewNtlmRoundTripper(base, options)
 		}
 	}
-	if ntlm != nil && negotiate != nil {
+	if ntlm == nil && negotiate == nil {
 		return nil
 	}
 	return &roundTripper{
