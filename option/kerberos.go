@@ -1,6 +1,6 @@
 package option
 
 type Kerberos struct {
-	FilePath string
-	CCName   string
+	ConfigFilePath string
+	CCName         string
 }

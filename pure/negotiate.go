@@ -22,8 +22,8 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 	var config *config.Config
 	var err error
 
-	if t.options.Kerberos != nil && len(t.options.Kerberos.FilePath) > 0 {
-		config, err = kerberosConfigFromPath(t.options.Kerberos.FilePath)
+	if t.options.Kerberos != nil && len(t.options.Kerberos.ConfigFilePath) > 0 {
+		config, err = kerberosConfigFromPath(t.options.Kerberos.ConfigFilePath)
 	} else {
 		config, err = defaultKerberosConfig()
 
@@ -39,7 +39,7 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 		var ccache *credentials.CCache
 
 		if t.options.Kerberos != nil && len(t.options.Kerberos.CCName) > 0 {
-			ccache, err = kerberosCCacheFromName(t.options.Kerberos.FilePath)
+			ccache, err = kerberosCCacheFromName(t.options.Kerberos.ConfigFilePath)
 		} else {
 			ccache, err = defaultKerberosCCache()
 
