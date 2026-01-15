@@ -17,16 +17,25 @@ In general, though, “Pure” should be completely sufficient here.
 
 ## The Apis:
 
+All apis can be configurated with an user. Otherwise, use the configurations specific to the API.
+
 ### Auto
 
-Just uses automatically uses sspi on windows and pure on non windows targets
+Just uses automatically uses sspi on windows and pure on non windows targets.
 
 ### SSPI (Only on Windows)
 
-It can be configured with the options. The Kerberos options are ignored here.
+Does not require any platform-specific configurations.
+The Kerberos options are ignored here.
 When used on targets other than Windows, the function returns nil.
+If user is not configured, the currently logged-in user is used.
 
 ### Pure
+
+If user is not configured, the Kerberos keytab file is used.
+A keytab file can be created with ktpass on windows, ktutil on linux and osx.
+If a fallback to NTLM is required (no Kerberos), a user configuration is required.
+To use this user only as a fallback, there is the UserOnlyForFallback setting.
 
 There are two methods for configuring this function.
 Option 1 the commonly known environment variables:
