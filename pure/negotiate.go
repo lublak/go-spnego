@@ -65,18 +65,23 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 	if err != nil {
 		return nil, fmt.Errorf("could not acquire client credential: %v", err)
 	}
+
 	st, err := s.InitSecContext()
 	if err != nil {
-		return nil, fmt.Errorf("could not initialize context: %v", err)
+		// fallback to ntlm if init doesn't work
+
+		res, roundTripErr := t.ntlm.RoundTrip(req)
+
+		if roundTripErr != nil {
+			return nil, fmt.Errorf("could not initialize context: %v, fallback ntlm error: %v", err, roundTripErr)
+		}
+
+		return res, nil
 	}
+
 	clientToken, err := st.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal SPNEGO. %v", err)
-	}
-
-	reqBody, pos, err := internal.SetBodyAsSeekCloser(req)
-	if err != nil {
-		return nil, err
 	}
 
 	req.Header.Set("Authorization", internal.EncodeNegotiateToken(clientToken))
@@ -85,14 +90,6 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 
 	if err != nil {
 		return nil, err
-	}
-
-	if res.StatusCode == http.StatusUnauthorized {
-		// fallback to ntlm
-
-		internal.ResetRoundTrip(reqBody, pos, res)
-
-		return t.ntlm.RoundTrip(req)
 	}
 
 	if res.StatusCode != http.StatusOK {
