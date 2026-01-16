@@ -25,5 +25,5 @@ func GetSpnFromRequest(req *http.Request) string {
 
 	spn = strings.TrimSuffix(spn, ".")
 
-	return "http/" + spn
+	return "HTTP/" + spn
 }
