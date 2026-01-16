@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	"github.com/lublak/go-spnego/option"
+	spnego_options "github.com/lublak/go-spnego/options"
 )
 
-func NewClient(base *http.Client, api option.ApiType, options option.AuthOptions) *http.Client {
+func NewClient(base *http.Client, api spnego_options.Api, options spnego_options.Options) *http.Client {
 	if base == nil {
 		base = &http.Client{}
 	}

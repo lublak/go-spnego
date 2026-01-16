@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/lublak/go-spnego/internal"
-	"github.com/lublak/go-spnego/option"
+	option "github.com/lublak/go-spnego/options"
+	spnego_options "github.com/lublak/go-spnego/options"
 	"github.com/lublak/go-spnego/pure"
 	"github.com/lublak/go-spnego/sspi"
 )
@@ -13,7 +14,7 @@ type roundTripper struct {
 	base      http.RoundTripper
 	negotiate http.RoundTripper
 	ntlm      http.RoundTripper
-	options   option.AuthOptions
+	options   spnego_options.Options
 }
 
 func (t *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -53,7 +54,7 @@ func (t *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return res, err
 }
 
-func NewRoundTripper(base http.RoundTripper, api option.ApiType, options option.AuthOptions) http.RoundTripper {
+func NewRoundTripper(base http.RoundTripper, api spnego_options.Api, options spnego_options.Options) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}

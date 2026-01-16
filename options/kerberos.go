@@ -1,4 +1,4 @@
-package option
+package options
 
 type Kerberos struct {
 	ConfigFilePath string

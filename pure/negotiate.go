@@ -9,13 +9,13 @@ import (
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/spnego"
 	"github.com/lublak/go-spnego/internal"
-	"github.com/lublak/go-spnego/option"
+	spnego_options "github.com/lublak/go-spnego/options"
 )
 
 type negotiateRoundTripper struct {
 	r       http.RoundTripper
 	ntlm    http.RoundTripper
-	options option.AuthOptions
+	options spnego_options.Options
 }
 
 func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -105,7 +105,7 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 	return res, nil
 }
 
-func NewNegotiateRoundTripper(base http.RoundTripper, options option.AuthOptions) http.RoundTripper {
+func NewNegotiateRoundTripper(base http.RoundTripper, options spnego_options.Options) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
