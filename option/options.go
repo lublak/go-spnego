@@ -5,7 +5,6 @@ type ApiType string
 const (
 	PURE ApiType = "pure"
 	SSPI ApiType = "sspi"
-	AUTO ApiType = "auto"
 )
 
 type AuthOptions struct {

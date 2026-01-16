@@ -2,7 +2,6 @@ package spnego
 
 import (
 	"net/http"
-	"runtime"
 
 	"github.com/lublak/go-spnego/internal"
 	"github.com/lublak/go-spnego/option"
@@ -67,14 +66,6 @@ func NewRoundTripper(base http.RoundTripper, api option.ApiType, options option.
 	case option.SSPI:
 		negotiate = sspi.NewNegotiateRoundTripper(base, options)
 		ntlm = sspi.NewNtlmRoundTripper(base, options)
-	case option.AUTO:
-		if runtime.GOOS == "windows" {
-			negotiate = sspi.NewNegotiateRoundTripper(base, options)
-			ntlm = sspi.NewNtlmRoundTripper(base, options)
-		} else {
-			negotiate = pure.NewNegotiateRoundTripper(base, options)
-			ntlm = pure.NewNtlmRoundTripper(base, options)
-		}
 	}
 	if ntlm == nil && negotiate == nil {
 		return nil
