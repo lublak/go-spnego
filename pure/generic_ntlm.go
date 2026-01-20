@@ -7,12 +7,12 @@ import (
 
 	"github.com/Azure/go-ntlmssp"
 	"github.com/lublak/go-spnego/internal"
-	spnego_options "github.com/lublak/go-spnego/options"
+	"github.com/lublak/go-spnego/options"
 )
 
 type genericNtlmRoundTripper struct {
 	r              http.RoundTripper
-	options        spnego_options.Options
+	options        options.Options
 	negotiateToken bool
 }
 
@@ -82,13 +82,13 @@ func (t *genericNtlmRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 	return t.r.RoundTrip(req)
 }
 
-func newGenericNtlmRoundTripper(base http.RoundTripper, options spnego_options.Options, negotiateToken bool) http.RoundTripper {
+func newGenericNtlmRoundTripper(base http.RoundTripper, spnegoOptions options.Options, negotiateToken bool) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
 	return &genericNtlmRoundTripper{
 		r:              base,
-		options:        options,
+		options:        spnegoOptions,
 		negotiateToken: negotiateToken,
 	}
 }

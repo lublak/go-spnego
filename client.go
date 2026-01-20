@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	spnego_options "github.com/lublak/go-spnego/options"
+	"github.com/lublak/go-spnego/options"
 )
 
-func NewClient(base *http.Client, api spnego_options.Api, options spnego_options.Options) *http.Client {
+func NewClient(base *http.Client, api options.Api, spnegoOptions options.Options) *http.Client {
 	if base == nil {
 		base = &http.Client{}
 	}
@@ -15,7 +15,7 @@ func NewClient(base *http.Client, api spnego_options.Api, options spnego_options
 		base.Jar, _ = cookiejar.New(nil)
 	}
 
-	base.Transport = NewRoundTripper(base.Transport, api, options)
+	base.Transport = NewRoundTripper(base.Transport, api, spnegoOptions)
 
 	return base
 }

@@ -7,12 +7,12 @@ import (
 	"github.com/alexbrainman/sspi"
 	"github.com/alexbrainman/sspi/negotiate"
 	"github.com/lublak/go-spnego/internal"
-	spnego_options "github.com/lublak/go-spnego/options"
+	"github.com/lublak/go-spnego/options"
 )
 
 type negotiateRoundTripper struct {
 	r       http.RoundTripper
-	options spnego_options.Options
+	options options.Options
 }
 
 func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -72,12 +72,12 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 	return res, nil
 }
 
-func NewNegotiateRoundTripper(base http.RoundTripper, options spnego_options.Options) http.RoundTripper {
+func NewNegotiateRoundTripper(base http.RoundTripper, spnegoOptions options.Options) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
 	return &negotiateRoundTripper{
 		r:       base,
-		options: options,
+		options: spnegoOptions,
 	}
 }

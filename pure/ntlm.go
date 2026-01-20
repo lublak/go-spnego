@@ -3,9 +3,9 @@ package pure
 import (
 	"net/http"
 
-	spnego_options "github.com/lublak/go-spnego/options"
+	"github.com/lublak/go-spnego/options"
 )
 
-func NewNtlmRoundTripper(base http.RoundTripper, options spnego_options.Options) http.RoundTripper {
-	return newGenericNtlmRoundTripper(base, options, false)
+func NewNtlmRoundTripper(base http.RoundTripper, spnegoOptions options.Options) http.RoundTripper {
+	return newGenericNtlmRoundTripper(base, spnegoOptions, false)
 }

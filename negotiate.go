@@ -4,8 +4,7 @@ import (
 	"net/http"
 
 	"github.com/lublak/go-spnego/internal"
-	option "github.com/lublak/go-spnego/options"
-	spnego_options "github.com/lublak/go-spnego/options"
+	"github.com/lublak/go-spnego/options"
 	"github.com/lublak/go-spnego/pure"
 	"github.com/lublak/go-spnego/sspi"
 )
@@ -14,7 +13,7 @@ type roundTripper struct {
 	base      http.RoundTripper
 	negotiate http.RoundTripper
 	ntlm      http.RoundTripper
-	options   spnego_options.Options
+	options   options.Options
 }
 
 func (t *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -54,19 +53,19 @@ func (t *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return res, err
 }
 
-func NewRoundTripper(base http.RoundTripper, api spnego_options.Api, options spnego_options.Options) http.RoundTripper {
+func NewRoundTripper(base http.RoundTripper, api options.Api, spnegoOptions options.Options) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
 	var negotiate http.RoundTripper
 	var ntlm http.RoundTripper
 	switch api {
-	case option.PURE:
-		negotiate = pure.NewNegotiateRoundTripper(base, options)
-		ntlm = pure.NewNtlmRoundTripper(base, options)
-	case option.SSPI:
-		negotiate = sspi.NewNegotiateRoundTripper(base, options)
-		ntlm = sspi.NewNtlmRoundTripper(base, options)
+	case options.PURE:
+		negotiate = pure.NewNegotiateRoundTripper(base, spnegoOptions)
+		ntlm = pure.NewNtlmRoundTripper(base, spnegoOptions)
+	case options.SSPI:
+		negotiate = sspi.NewNegotiateRoundTripper(base, spnegoOptions)
+		ntlm = sspi.NewNtlmRoundTripper(base, spnegoOptions)
 	}
 	if ntlm == nil && negotiate == nil {
 		return nil
@@ -75,6 +74,6 @@ func NewRoundTripper(base http.RoundTripper, api spnego_options.Api, options spn
 		base:      base,
 		negotiate: negotiate,
 		ntlm:      ntlm,
-		options:   options,
+		options:   spnegoOptions,
 	}
 }

@@ -9,12 +9,12 @@ import (
 	"github.com/alexbrainman/sspi"
 	"github.com/alexbrainman/sspi/ntlm"
 	"github.com/lublak/go-spnego/internal"
-	spnego_options "github.com/lublak/go-spnego/options"
+	"github.com/lublak/go-spnego/options"
 )
 
 type ntlmRoundTripper struct {
 	r       http.RoundTripper
-	options spnego_options.Options
+	options options.Options
 }
 
 func (t *ntlmRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -79,12 +79,12 @@ func (t *ntlmRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return t.r.RoundTrip(req)
 }
 
-func NewNtlmRoundTripper(base http.RoundTripper, options spnego_options.Options) http.RoundTripper {
+func NewNtlmRoundTripper(base http.RoundTripper, spnegoOptions options.Options) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
 	return &ntlmRoundTripper{
 		r:       base,
-		options: options,
+		options: spnegoOptions,
 	}
 }
