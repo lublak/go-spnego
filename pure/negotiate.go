@@ -3,6 +3,7 @@ package pure
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/jcmturner/gokrb5/v8/client"
 	"github.com/jcmturner/gokrb5/v8/config"
@@ -26,7 +27,17 @@ func (t *negotiateRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 		config, err = kerberosConfigFromPath(t.options.Kerberos.ConfigFilePath)
 	} else {
 		config, err = defaultKerberosConfig()
+		if os.IsNotExist(err) {
+			// fallback to ntlm if kerberos config not exists
 
+			res, roundTripErr := t.ntlm.RoundTrip(req)
+
+			if roundTripErr != nil {
+				return nil, fmt.Errorf("kerberos config missing: %v, fallback ntlm error: %v", err, roundTripErr)
+			}
+
+			return res, nil
+		}
 	}
 
 	if err != nil {
